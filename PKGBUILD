@@ -54,7 +54,7 @@ sha256sums=(
   '5d67a2cfdd7b984a9c9f64e5abc6e082c5e3bc958833a92a55370cc623799ce1'
   '0cea7ad6cc1af98ac701b9c61b7c9aae2d0f2104749a80ae84c1f6ca0fc17555'
   'a6f049716da1d09d9e0ec1500c60bf01a5ff8a0fe2419178dd1ff2fdb2b77563'
-  'b530705424c7fdd61c3eaa477d6c79643e5d9d0cf7ecadc8f6e96559b7c6dc2d'
+  'b530705424c7fdd61b3eaa477d6c79643e5d9d0cf7ecadc8f6e96559b7c6dc2d'
   'e9cf6f7da499a4400ba30ae1da8f7ef25ce97827bd8c1084717aa05438035186'
 )
 
@@ -284,7 +284,7 @@ if [[ ! -f "$_emu_config" ]]; then
     exit 0
 fi
 PATCHEOF
-  sed -i '/"$all_tool_dir\/emulator\/Emulator" "\$@"/r '"$srcdir/emulator-wrapper-patch.sh" "$_pkg/tools/bin/Emulator"
+  sed -i '/"$all_tool_dir\/emulator\/Emulator" "\$@"/r '"$srcdir/emulator-wrapper-patch.sh" "$pkgdir/tools/bin/Emulator"
   if [[ "$_expose_cli_tools" == "true" ]]; then
     mkdir -p "$pkgdir/usr/bin"
     # Huawei-specific names: expose as-is
@@ -412,27 +412,27 @@ SHEOF
     --arg wmclass "deveco-studio" \
     --arg svg "bin/devecostudio.svg" \
     '.svgIconPath = $svg |
-     .launch[0].os = $os |
-     .launch[0].launcherPath = $launcher |
-     .launch[0].javaExecutablePath = $java |
-     .launch[0].arch = $arch |
-     .launch[0].vmOptionsFilePath = $vmopts |
-     .launch[0].startupWmClass = $wmclass |
-     del(.launch[0].svgIconPath) |
-     .launch[0].additionalJvmArguments |= (
-       map(gsub("\\$APP_PACKAGE/Contents/"; "$IDE_HOME/")) |
-       map(select(test("com\\.apple\\.eawt|com\\.apple\\.laf|sun\\.lwawt") | not)) |
-       . + [
-         "--enable-native-access=ALL-UNNAMED",
-         "-Dawt.lock.fair=true",
-         "-Dsun.tools.attach.tmp.only=true",
-         "-Dglfw.im.module=fcitx",
-         "--add-opens=java.desktop/com.sun.java.swing.plaf.gtk=ALL-UNNAMED",
-         "--add-opens=java.desktop/javax.swing.text.html.parser=ALL-UNNAMED",
-         "--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
-       ]
-     )' \
-     "$_mac/Resources/product-info.json" > "$_pkg/product-info.json"
+      .launch[0].os = $os |
+      .launch[0].launcherPath = $launcher |
+      .launch[0].javaExecutablePath = $java |
+      .launch[0].arch = $arch |
+      .launch[0].vmOptionsFilePath = $vmopts |
+      .launch[0].startupWmClass = $wmclass |
+      del(.launch[0].svgIconPath) |
+      .launch[0].additionalJvmArguments |= (
+        map(gsub("\\$APP_PACKAGE/Contents/"; "$IDE_HOME/")) |
+        map(select(test("com\\.apple\\.eawt|com\\.apple\\.laf|sun\\.lwawt") | not)) |
+        . + [
+          "--enable-native-access=ALL-UNNAMED",
+          "-Dawt.lock.fair=true",
+          "-Dsun.tools.attach.tmp.only=true",
+          "-Dglfw.im.module=fcitx",
+          "--add-opens=java.desktop/com.sun.java.swing.plaf.gtk=ALL-UNNAMED",
+          "--add-opens=java.desktop/javax.swing.text.html.parser=ALL-UNNAMED",
+          "--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
+        ]
+      )' \
+      "$_mac/Resources/product-info.json" > "$_pkg/product-info.json"
 
   msg2 "Stripping Linux binaries..."
   # Strip JBR, launcher, native .so; skip cross-compiled ARM SDK binaries
@@ -474,13 +474,22 @@ PYEOF
   # selected by compileSdkVersion and the artifact's releaseType follows the
   # chosen SDK's metadata (6.1.1 → Release, 26.0.0 → Beta2).
   python3 - "$_pkg/tools/hvigor/hvigor-ohos-plugin/src/utils/validate/validate-util.js" << 'PYEOF'
-import sys
+import re, sys
 p = sys.argv[1]
-old = '(0,sdkmanager_common_1.isEqualApiVersion)(r,s)&&0===(0,sdkmanager_common_1.compareVersion)(t.api,n.api)||this._log.printErrorExit("UNSUPPORTED_COMPILESDKVERSION",[i.compileSdkVersion,o],[[[...]
-new = '(0,sdkmanager_common_1.isEqualApiVersion)(r,s)&&0===(0,sdkmanager_common_1.compareVersion)(t.api,n.api)||void 0'
-s = open(p).read()
-if old in s:
-    open(p, 'w').write(s.replace(old, new))
+with open(p, encoding='utf-8') as f:
+    s = f.read()
+# Match the minified unsupported-version guard and neutralize it without
+# depending on the exact escaped text blob. This avoids Python syntax issues
+# caused by embedding the full JS snippet directly in a single-quoted literal.
+pattern = r'''(?s)(0,\s*sdkmanager_common_1\.isEqualApiVersion\)\(r,s\)\s*&&\s*0===\s*\(0,\s*sdkmanager_common_1\.compareVersion\)\(t\.api,n\.api\)\s*\|\|)\s*this\._log\.printErrorExit\("UNSUPPORTED_COMPILESDKVERSION",\s*\[[^\]]+\],\s*\[[^\]]+\]\)'''
+new = re.sub(pattern, r'\1void 0', s, count=1)
+if new == s:
+    # Some build variants use a slightly different minified layout. Strip only
+    # the unsupported-version error call while leaving the rest of the logic.
+    new = s.replace('this._log.printErrorExit("UNSUPPORTED_COMPILESDKVERSION",[i.compileSdkVersion,o],', 'void 0')
+if new != s:
+    with open(p, 'w', encoding='utf-8') as f:
+        f.write(new)
     print('  hvigor patch applied')
 else:
     print('  hvigor patch: pattern not found (layout changed?)')
@@ -522,7 +531,7 @@ for arg in "$@"; do
   case "$arg" in
     --no-deps|--no-index) ;;
     *) args+=("$arg") ;;
-  esac
+esac
 done
 exec -a "$0" /opt/devecostudio/plugins/harmony/lib/python/bin/python3.12 "${args[@]}"
 WRAPEOF
