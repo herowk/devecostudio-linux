@@ -432,7 +432,7 @@ SHEOF
          "--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
        ]
      )' \
-    "$_mac/Resources/product-info.json" > "$_pkg/product-info.json"
+     "$_mac/Resources/product-info.json" > "$_pkg/product-info.json"
 
   msg2 "Stripping Linux binaries..."
   # Strip JBR, launcher, native .so; skip cross-compiled ARM SDK binaries
@@ -476,7 +476,7 @@ PYEOF
   python3 - "$_pkg/tools/hvigor/hvigor-ohos-plugin/src/utils/validate/validate-util.js" << 'PYEOF'
 import sys
 p = sys.argv[1]
-old = '(0,sdkmanager_common_1.isEqualApiVersion)(r,s)&&0===(0,sdkmanager_common_1.compareVersion)(t.api,n.api)||this._log.printErrorExit("UNSUPPORTED_COMPILESDKVERSION",[i.compileSdkVersion,o],[[version_const_js_1.VersionConst.SUPPORT_COMPILE_VERSION]])'
+old = '(0,sdkmanager_common_1.isEqualApiVersion)(r,s)&&0===(0,sdkmanager_common_1.compareVersion)(t.api,n.api)||this._log.printErrorExit("UNSUPPORTED_COMPILESDKVERSION",[i.compileSdkVersion,o],[[[...]
 new = '(0,sdkmanager_common_1.isEqualApiVersion)(r,s)&&0===(0,sdkmanager_common_1.compareVersion)(t.api,n.api)||void 0'
 s = open(p).read()
 if old in s:
@@ -500,10 +500,11 @@ PYEOF
   # venv dir name falls back to a hardcoded 3.12.10, so the version must
   # match exactly or the requirements path lookup misses.
   _pybase="$_pkg/plugins/harmony/lib/python"
+  mkdir -p "$_pybase"
   rm -rf "$_pybase/bin" "$_pybase/include" "$_pybase/lib" "$_pybase/share"
-  cp -a "$srcdir/python/bin" "$_pybase/bin"
-  cp -a "$srcdir/python/lib" "$_pybase/lib"
-  cp -a "$srcdir/python/include" "$_pybase/include"
+  cp -a "$srcdir/python/bin" "$_pybase/"
+  cp -a "$srcdir/python/lib" "$_pybase/"
+  cp -a "$srcdir/python/include" "$_pybase/"
   # Wrap the bundled python3 (the venv symlinks inherit it): Huawei's pip
   # flow runs `pip wheel <lib> --no-deps` then `pip install <lib>
   # --no-index`, so torch's Linux-only nvidia deps are never fetched. Strip
