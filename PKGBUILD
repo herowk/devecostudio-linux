@@ -485,7 +485,11 @@ with open(p, encoding='utf-8') as f:
 # Match the minified unsupported-version guard and neutralize it without
 # depending on the exact escaped text blob. This avoids Python syntax issues
 # caused by embedding the full JS snippet directly in a single-quoted literal.
-pattern = r'''(?s)(0,\s*sdkmanager_common_1\.isEqualApiVersion\)\(r,s\)\s*&&\s*0===\s*\(0,\s*sdkmanager_common_1\.compareVersion\)\(t\.api,n\.api\)\s*\|\|)\s*this\._log\.printErrorExit\("UNSUPPOR[...]
+pattern = (
+    r"(?s)(0,\s*sdkmanager_common_1\.isEqualApiVersion\)\(r,s\)\s*&&\s*"
+    r"0===\s*\(0,\s*sdkmanager_common_1\.compareVersion\)\(t\.api,n\.api\)\s*\|\|)"
+    r"\s*this\._log\.printErrorExit\(\"UNSUPPORTED_COMPILESDKVERSION\""
+)
 new = re.sub(pattern, r'\1void 0', s, count=1)
 if new == s:
     # Some build variants use a slightly different minified layout. Strip only
