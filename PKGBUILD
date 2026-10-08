@@ -48,7 +48,7 @@ source=(
   "commandline-tools-linux-x64.zip"
   "idea-${_ideaver}.tar.gz::https://download.jetbrains.com/idea/idea-${_ideaver}.tar.gz"
   "devecostudio.desktop"
-  "cpython-3.12.10+20250409-x86_64-unknown-linux-gnu-install_only.tar.gz::https://github.com/astral-sh/python-build-standalone/releases/download/20250409/cpython-3.12.10+20250409-x86_64-unknown-li[...]
+  "cpython-3.12.10+20250409-x86_64-unknown-linux-gnu-install_only.tar.gz::https://github.com/astral-sh/python-build-standalone/releases/download/20250409/cpython-3.12.10+20250409-x86_64-unknown-linux-gnu-install_only.tar.gz"
 )
 sha256sums=(
   '5d67a2cfdd7b984a9c9f64e5abc6e082c5e3bc958833a92a55370cc623799ce1'
@@ -284,7 +284,11 @@ if [[ ! -f "$_emu_config" ]]; then
     exit 0
 fi
 PATCHEOF
-  sed -i '/"$all_tool_dir\/emulator\/Emulator" "\$@"/r '"$srcdir/emulator-wrapper-patch.sh" "$_pkg/tools/bin/Emulator"
+  if [[ -f "$_pkg/tools/bin/Emulator" ]]; then
+    sed -i '/"$all_tool_dir\/emulator\/Emulator" "\$@"/r '"$srcdir/emulator-wrapper-patch.sh" "$_pkg/tools/bin/Emulator"
+  else
+    echo "Warning: Emulator wrapper not found; skipping patch"
+  fi
   if [[ "$_expose_cli_tools" == "true" ]]; then
     mkdir -p "$pkgdir/usr/bin"
     # Huawei-specific names: expose as-is
@@ -388,14 +392,14 @@ import json, os, sys
 p = sys.argv[1]
 if os.path.exists(p) and os.path.getsize(p) > 0:
     try:
-         d = json.load(open(p))
-         for dep in d.get("dependencies", []):
-             if dep.get("name") == "torchvision" and dep.get("version") == "0.21.0":
-                 dep["version"] = "0.17.2"
-                 json.dump(d, open(p, "w"), ensure_ascii=False, indent=2)
-                 break
-     except Exception:
-         pass
+        d = json.load(open(p))
+        for dep in d.get("dependencies", []):
+            if dep.get("name") == "torchvision" and dep.get("version") == "0.21.0":
+                dep["version"] = "0.17.2"
+                json.dump(d, open(p, "w"), ensure_ascii=False, indent=2)
+                break
+    except Exception:
+        pass
 PYEOF
 fi
 exec "$(dirname "$(readlink -f "$0")")/devecostudio" "${_JCEF_ARGS[@]}" "$@"
@@ -452,18 +456,18 @@ import os, sys
 root = sys.argv[1]
 for dirpath, dirnames, filenames in os.walk(root):
     for fn in filenames:
-         p = os.path.join(dirpath, fn)
-         try:
-             with open(p, 'rb') as f:
-                 head = f.read(256)
-             # ELF magic, or a shebang anywhere in the first 256 bytes
-             # (some CLI scripts put a copyright comment before #!)
-             if head[:4] == b'\x7fELF' or b'#!' in head:
-                 st = os.stat(p)
-                 if not st.st_mode & 0o111:
-                     os.chmod(p, st.st_mode | 0o111)
-         except OSError:
-             pass
+        p = os.path.join(dirpath, fn)
+        try:
+            with open(p, 'rb') as f:
+                head = f.read(256)
+            # ELF magic, or a shebang anywhere in the first 256 bytes
+            # (some CLI scripts put a copyright comment before #!)
+            if head[:4] == b'\x7fELF' or b'#!' in head:
+                st = os.stat(p)
+                if not st.st_mode & 0o111:
+                    os.chmod(p, st.st_mode | 0o111)
+        except OSError:
+            pass
 PYEOF
 
   msg2 "Patching hvigor to accept any compileSdkVersion..."
@@ -484,15 +488,15 @@ with open(p, encoding='utf-8') as f:
 pattern = r'''(?s)(0,\s*sdkmanager_common_1\.isEqualApiVersion\)\(r,s\)\s*&&\s*0===\s*\(0,\s*sdkmanager_common_1\.compareVersion\)\(t\.api,n\.api\)\s*\|\|)\s*this\._log\.printErrorExit\("UNSUPPOR[...]
 new = re.sub(pattern, r'\1void 0', s, count=1)
 if new == s:
-     # Some build variants use a slightly different minified layout. Strip only
-     # the unsupported-version error call while leaving the rest of the logic.
-     new = s.replace('this._log.printErrorExit("UNSUPPORTED_COMPILESDKVERSION",[i.compileSdkVersion,o],', 'void 0')
+    # Some build variants use a slightly different minified layout. Strip only
+    # the unsupported-version error call while leaving the rest of the logic.
+    new = s.replace('this._log.printErrorExit("UNSUPPORTED_COMPILESDKVERSION",[i.compileSdkVersion,o],', 'void 0')
 if new != s:
-     with open(p, 'w', encoding='utf-8') as f:
-         f.write(new)
-     print('  hvigor patch applied')
+    with open(p, 'w', encoding='utf-8') as f:
+        f.write(new)
+    print('  hvigor patch applied')
 else:
-     print('  hvigor patch: pattern not found (layout changed?)')
+    print('  hvigor patch: pattern not found (layout changed?)')
 PYEOF
 
   msg2 "Cleaning platform cruft..."
