@@ -54,7 +54,7 @@ sha256sums=(
   '5d67a2cfdd7b984a9c9f64e5abc6e082c5e3bc958833a92a55370cc623799ce1'
   '0cea7ad6cc1af98ac701b9c61b7c9aae2d0f2104749a80ae84c1f6ca0fc17555'
   'a6f049716da1d09d9e0ec1500c60bf01a5ff8a0fe2419178dd1ff2fdb2b77563'
-  'b530705424c7fdd61b3eaa477d6c79643e5d9d0cf7ecadc8f6e96559b7c6dc2d'
+  'b530705424c7fdd61c3eaa477d6c79643e5d9d0cf7ecadc8f6e96559b7c6dc2d'
   'e9cf6f7da499a4400ba30ae1da8f7ef25ce97827bd8c1084717aa05438035186'
 )
 
@@ -481,7 +481,7 @@ with open(p, encoding='utf-8') as f:
 # Match the minified unsupported-version guard and neutralize it without
 # depending on the exact escaped text blob. This avoids Python syntax issues
 # caused by embedding the full JS snippet directly in a single-quoted literal.
-pattern = r'''(?s)(0,\s*sdkmanager_common_1\.isEqualApiVersion\)\(r,s\)\s*&&\s*0===\s*\(0,\s*sdkmanager_common_1\.compareVersion\)\(t\.api,n\.api\)\s*\|\|)\s*this\._log\.printErrorExit\("UNSUPPORTED_COMPILESDKVERSION",\s*\[[^\]]+\],\s*\[[^\]]+\]\)'''
+pattern = r'''(?s)(0,\s*sdkmanager_common_1\.isEqualApiVersion\)\(r,s\)\s*&&\s*0===\s*\(0,\s*sdkmanager_common_1\.compareVersion\)\(t\.api,n\.api\)\s*\|\|)\s*this\._log\.printErrorExit\("UNSUPPOR[...]
 new = re.sub(pattern, r'\1void 0', s, count=1)
 if new == s:
     # Some build variants use a slightly different minified layout. Strip only
@@ -531,7 +531,7 @@ for arg in "$@"; do
   case "$arg" in
     --no-deps|--no-index) ;;
     *) args+=("$arg") ;;
-esac
+  esac
 done
 exec -a "$0" /opt/devecostudio/plugins/harmony/lib/python/bin/python3.12 "${args[@]}"
 WRAPEOF
